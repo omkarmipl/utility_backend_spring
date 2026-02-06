@@ -2,13 +2,13 @@ spring:
   application:
     name: gum-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/gum_backend?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/gum_backend?createDatabaseIfNotExist=true&useSSL=false
     username: root
     password: misha@123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
