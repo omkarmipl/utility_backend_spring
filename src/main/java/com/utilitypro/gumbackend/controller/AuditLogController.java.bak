@@ -1,0 +1,42 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.audit.AuditLogListResponse;
+import com.utilitypro.gumbackend.service.AuditLogService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+/**
+ * REST Controller for Audit Log Management
+ * Handles audit log queries
+ */
+@RestController
+@RequestMapping("/api/audit-logs")
+@RequiredArgsConstructor
+public class AuditLogController {
+
+    private final AuditLogService auditLogService;
+
+    /**
+     * GET /api/audit-logs
+     * List audit log entries
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'read_only_auditor')")
+    public ResponseEntity<AuditLogListResponse> listAuditLogs(
+            @RequestParam(required = false) String entity_type,
+            @RequestParam(required = false) UUID changed_by,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start_date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end_date,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer limit) {
+        AuditLogListResponse response = auditLogService.listAuditLogs(
+                entity_type, changed_by, start_date, end_date, page, limit);
+        return ResponseEntity.ok(response);
+    }
+}

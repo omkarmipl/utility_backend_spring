@@ -1,0 +1,130 @@
+package com.utilitypro.gumbackend.service;
+
+import com.utilitypro.gumbackend.domain.entity.*;
+import com.utilitypro.gumbackend.repository.*;
+import com.utilitypro.gumbackend.security.AuthorizationHelper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Anomaly Service
+ * Handles anomaly detection thresholds, acknowledgements, and alert settings
+ */
+@Service
+@RequiredArgsConstructor
+public class AnomalyService {
+
+    private final AnomalyThresholdRepository anomalyThresholdRepository;
+    private final AnomalyAcknowledgementRepository anomalyAcknowledgementRepository;
+    private final AlertSettingRepository alertSettingRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final AuthorizationHelper authorizationHelper;
+
+    // Threshold Management
+    @Transactional(readOnly = true)
+    public List<AnomalyThreshold> listThresholds() {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        return anomalyThresholdRepository.findAll();
+    }
+
+    @Transactional
+    public AnomalyThreshold createThreshold(AnomalyThreshold threshold) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        AnomalyThreshold saved = anomalyThresholdRepository.save(threshold);
+        createAuditLog("AnomalyThreshold", saved.getId(), "CREATE");
+        return saved;
+    }
+
+    @Transactional
+    public AnomalyThreshold updateThreshold(UUID id, AnomalyThreshold updatedThreshold) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        
+        AnomalyThreshold existing = anomalyThresholdRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Threshold not found"));
+
+        existing.setThresholdValue(updatedThreshold.getThresholdValue());
+        existing.setIsActive(updatedThreshold.getIsActive());
+
+        AnomalyThreshold saved = anomalyThresholdRepository.save(existing);
+        createAuditLog("AnomalyThreshold", saved.getId(), "UPDATE");
+        return saved;
+    }
+
+    @Transactional
+    public void deleteThreshold(UUID id) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        anomalyThresholdRepository.deleteById(id);
+        createAuditLog("AnomalyThreshold", id, "DELETE");
+    }
+
+    // Acknowledgement Management
+    @Transactional(readOnly = true)
+    public List<AnomalyAcknowledgement> listAcknowledgements(UUID billId) {
+        authorizationHelper.requireRole("system_admin", "mof_admin", "ministry_admin");
+        return anomalyAcknowledgementRepository.findByBillId(billId);
+    }
+
+    @Transactional
+    public AnomalyAcknowledgement acknowledgeAnomaly(AnomalyAcknowledgement acknowledgement) {
+        authorizationHelper.requireRole("system_admin", "mof_admin", "ministry_admin");
+        
+        acknowledgement.setAcknowledgedBy(authorizationHelper.getCurrentUserId());
+        acknowledgement.setAcknowledgedAt(OffsetDateTime.now());
+        
+        AnomalyAcknowledgement saved = anomalyAcknowledgementRepository.save(acknowledgement);
+        createAuditLog("AnomalyAcknowledgement", saved.getId(), "CREATE");
+        return saved;
+    }
+
+    // Alert Settings Management
+    @Transactional(readOnly = true)
+    public List<AlertSetting> listAlertSettings() {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        return alertSettingRepository.findAll();
+    }
+
+    @Transactional
+    public AlertSetting createAlertSetting(AlertSetting alertSetting) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        AlertSetting saved = alertSettingRepository.save(alertSetting);
+        createAuditLog("AlertSetting", saved.getId(), "CREATE");
+        return saved;
+    }
+
+    @Transactional
+    public AlertSetting updateAlertSetting(UUID id, AlertSetting updatedAlertSetting) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        
+        AlertSetting existing = alertSettingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Alert setting not found"));
+
+        existing.setIsEnabled(updatedAlertSetting.getIsEnabled());
+        
+        AlertSetting saved = alertSettingRepository.save(existing);
+        createAuditLog("AlertSetting", saved.getId(), "UPDATE");
+        return saved;
+    }
+
+    @Transactional
+    public void deleteAlertSetting(UUID id) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+        alertSettingRepository.deleteById(id);
+        createAuditLog("AlertSetting", id, "DELETE");
+    }
+
+    private void createAuditLog(String entityType, UUID entityId, String action) {
+        AuditLog auditLog = AuditLog.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .action(action)
+                .changedBy(authorizationHelper.getCurrentUserId())
+                .changedAt(OffsetDateTime.now())
+                .build();
+        auditLogRepository.save(auditLog);
+    }
+}

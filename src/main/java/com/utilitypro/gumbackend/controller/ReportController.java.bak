@@ -1,0 +1,86 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.report.*;
+import com.utilitypro.gumbackend.service.ReportService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+/**
+ * REST Controller for Reports and Analytics
+ * Handles payment trends, ministry spending, cost analysis, aged payables, and budget vs actual reports
+ */
+@RestController
+@RequestMapping("/api/reports")
+@RequiredArgsConstructor
+public class ReportController {
+
+    private final ReportService reportService;
+
+    /**
+     * GET /api/reports/payment-trends
+     * Payment trends over time
+     */
+    @GetMapping("/payment-trends")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaymentTrendsResponse> getPaymentTrends(
+            @RequestParam(required = false, defaultValue = "12") Integer months) {
+        PaymentTrendsResponse response = reportService.getPaymentTrends(months);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/reports/ministry-spending
+     * Ministry spending comparison
+     */
+    @GetMapping("/ministry-spending")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MinistrySpendingResponse> getMinistrySpending(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start_date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end_date) {
+        MinistrySpendingResponse response = reportService.getMinistrySpending(start_date, end_date);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/reports/utility-cost-analysis
+     * Utility cost analysis by type and provider
+     */
+    @GetMapping("/utility-cost-analysis")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UtilityCostAnalysisResponse> getUtilityCostAnalysis(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start_date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end_date) {
+        UtilityCostAnalysisResponse response = reportService.getUtilityCostAnalysis(start_date, end_date);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/reports/aged-payables
+     * Aged payables report
+     */
+    @GetMapping("/aged-payables")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AgedPayablesResponse> getAgedPayables() {
+        AgedPayablesResponse response = reportService.getAgedPayables();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/reports/budget-vs-actual
+     * Budget vs actual spending comparison
+     */
+    @GetMapping("/budget-vs-actual")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BudgetVsActualResponse> getBudgetVsActual(
+            @RequestParam Integer fiscal_year,
+            @RequestParam(required = false) UUID ministry_id) {
+        BudgetVsActualResponse response = reportService.getBudgetVsActual(fiscal_year, ministry_id);
+        return ResponseEntity.ok(response);
+    }
+}

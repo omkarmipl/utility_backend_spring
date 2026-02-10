@@ -1,0 +1,79 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.job.*;
+import com.utilitypro.gumbackend.service.JobService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+
+/**
+ * REST Controller for Background Jobs and Scheduled Tasks
+ * Handles anomaly scans, account renewal notifications, and other background jobs
+ */
+@RestController
+@RequestMapping("/api/jobs")
+@RequiredArgsConstructor
+public class JobController {
+
+    private final JobService jobService;
+
+    /**
+     * POST /api/jobs/anomaly-scan
+     * Trigger anomaly detection scan
+     */
+    @PostMapping("/anomaly-scan")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<AnomalyScanJobResponse> triggerAnomalyScan(@Valid @RequestBody AnomalyScanJobRequest request) {
+        AnomalyScanJobResponse response = jobService.triggerAnomalyScan(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/notifications/anomaly-alert
+     * Send anomaly alert notifications
+     */
+    @PostMapping("/notifications/anomaly-alert")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<Void> sendAnomalyAlert(@Valid @RequestBody AnomalyAlertRequest request) {
+        jobService.sendAnomalyAlert(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * POST /api/notifications/account-renewal
+     * Send account renewal notifications
+     */
+    @PostMapping("/notifications/account-renewal")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<AccountRenewalNotificationResponse> sendAccountRenewalNotifications(
+            @Valid @RequestBody AccountRenewalNotificationRequest request) {
+        AccountRenewalNotificationResponse response = jobService.sendAccountRenewalNotifications(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/notifications/bill-status
+     * Send bill status change notification
+     */
+    @PostMapping("/notifications/bill-status")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<Void> sendBillStatusNotification(@Valid @RequestBody BillStatusNotificationRequest request) {
+        jobService.sendBillStatusNotification(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /api/notifications/history
+     * Get notification history
+     */
+    @GetMapping("/notifications/history")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<NotificationHistoryResponse> getNotificationHistory(
+            @RequestParam(required = false, defaultValue = "100") Integer limit) {
+        NotificationHistoryResponse response = jobService.getNotificationHistory(limit);
+        return ResponseEntity.ok(response);
+    }
+}

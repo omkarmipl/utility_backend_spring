@@ -1,0 +1,44 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.ocr.*;
+import com.utilitypro.gumbackend.service.OCRService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+
+/**
+ * REST Controller for OCR and Document Processing
+ * Handles OCR scanning of utility bills and document data extraction
+ */
+@RestController
+@RequestMapping("/api/ocr")
+@RequiredArgsConstructor
+public class OCRController {
+
+    private final OCRService ocrService;
+
+    /**
+     * POST /api/ocr/scan-bill
+     * OCR scan uploaded bill image
+     */
+    @PostMapping("/scan-bill")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OCRScanResponse> scanBill(@Valid @RequestBody OCRScanRequest request) {
+        OCRScanResponse response = ocrService.scanBill(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/ocr/extract-om-data
+     * Extract data from OM document
+     */
+    @PostMapping("/extract-om-data")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OMDataExtractionResponse> extractOMData(@Valid @RequestBody OMDataExtractionRequest request) {
+        OMDataExtractionResponse response = ocrService.extractOMData(request);
+        return ResponseEntity.ok(response);
+    }
+}

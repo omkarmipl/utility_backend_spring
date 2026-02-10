@@ -1,0 +1,83 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.account.*;
+import com.utilitypro.gumbackend.service.UtilityAccountService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Utility Account Management
+ * Handles utility account CRUD operations and bulk imports
+ */
+@RestController
+@RequestMapping("/api/utility-accounts")
+@RequiredArgsConstructor
+public class UtilityAccountController {
+
+    private final UtilityAccountService utilityAccountService;
+
+    /**
+     * GET /api/utility-accounts
+     * List utility accounts
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UtilityAccountListResponse> listUtilityAccounts(
+            @RequestParam(required = false) UUID location_id,
+            @RequestParam(required = false) Boolean include_inactive) {
+        UtilityAccountListResponse response = utilityAccountService.listUtilityAccounts(location_id, include_inactive);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/utility-accounts
+     * Create new utility account
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<UtilityAccountResponse> createUtilityAccount(@Valid @RequestBody CreateUtilityAccountRequest request) {
+        UtilityAccountResponse response = utilityAccountService.createUtilityAccount(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/utility-accounts/:id
+     * Update utility account
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<UtilityAccountResponse> updateUtilityAccount(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateUtilityAccountRequest request) {
+        UtilityAccountResponse response = utilityAccountService.updateUtilityAccount(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/utility-accounts/:id
+     * Delete utility account
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<Void> deleteUtilityAccount(@PathVariable UUID id) {
+        utilityAccountService.deleteUtilityAccount(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * POST /api/utility-accounts/bulk-import
+     * Bulk import utility accounts
+     */
+    @PostMapping("/bulk-import")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<BulkImportResponse> bulkImportUtilityAccounts(@Valid @RequestBody BulkImportRequest request) {
+        BulkImportResponse response = utilityAccountService.bulkImportUtilityAccounts(request);
+        return ResponseEntity.ok(response);
+    }
+}

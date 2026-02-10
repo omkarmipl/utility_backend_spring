@@ -1,0 +1,139 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.anomaly.*;
+import com.utilitypro.gumbackend.service.AnomalyService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Anomaly Detection and Alerts
+ * Handles anomaly thresholds, acknowledgements, and alert settings
+ */
+@RestController
+@RequestMapping("/api/anomalies")
+@RequiredArgsConstructor
+public class AnomalyController {
+
+    private final AnomalyService anomalyService;
+
+    /**
+     * GET /api/anomalies/thresholds
+     * List anomaly detection thresholds
+     */
+    @GetMapping("/thresholds")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<AnomalyThresholdListResponse> listThresholds() {
+        AnomalyThresholdListResponse response = anomalyService.listThresholds();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/anomalies/thresholds
+     * Create anomaly threshold
+     */
+    @PostMapping("/thresholds")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<AnomalyThresholdResponse> createThreshold(@Valid @RequestBody CreateAnomalyThresholdRequest request) {
+        AnomalyThresholdResponse response = anomalyService.createThreshold(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/anomalies/thresholds/:id
+     * Update anomaly threshold
+     */
+    @PutMapping("/thresholds/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<AnomalyThresholdResponse> updateThreshold(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateAnomalyThresholdRequest request) {
+        AnomalyThresholdResponse response = anomalyService.updateThreshold(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/anomalies/thresholds/:id
+     * Delete anomaly threshold
+     */
+    @DeleteMapping("/thresholds/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> deleteThreshold(@PathVariable UUID id) {
+        anomalyService.deleteThreshold(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /api/anomalies/acknowledgements
+     * List anomaly acknowledgements
+     */
+    @GetMapping("/acknowledgements")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AnomalyAcknowledgementListResponse> listAcknowledgements(
+            @RequestParam(required = false) UUID bill_id) {
+        AnomalyAcknowledgementListResponse response = anomalyService.listAcknowledgements(bill_id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/anomalies/acknowledgements
+     * Acknowledge anomaly
+     */
+    @PostMapping("/acknowledgements")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<Void> acknowledgeAnomaly(@Valid @RequestBody AcknowledgeAnomalyRequest request) {
+        anomalyService.acknowledgeAnomaly(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /api/anomalies/alerts
+     * List alert settings
+     */
+    @GetMapping("/alerts")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<AlertSettingsListResponse> listAlertSettings() {
+        AlertSettingsListResponse response = anomalyService.listAlertSettings();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/anomalies/alerts
+     * Create alert setting
+     */
+    @PostMapping("/alerts")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<AlertSettingsResponse> createAlertSetting(@Valid @RequestBody CreateAlertSettingsRequest request) {
+        AlertSettingsResponse response = anomalyService.createAlertSetting(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/anomalies/alerts/:id
+     * Update alert setting
+     */
+    @PutMapping("/alerts/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<AlertSettingsResponse> updateAlertSetting(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateAlertSettingsRequest request) {
+        AlertSettingsResponse response = anomalyService.updateAlertSetting(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/anomalies/alerts/:id
+     * Delete alert setting
+     */
+    @DeleteMapping("/alerts/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> deleteAlertSetting(@PathVariable UUID id) {
+        anomalyService.deleteAlertSetting(id);
+        return ResponseEntity.noContent().build();
+    }
+}

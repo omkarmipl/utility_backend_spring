@@ -1,0 +1,129 @@
+package com.utilitypro.gumbackend.service;
+
+import com.utilitypro.gumbackend.domain.entity.AuditLog;
+import com.utilitypro.gumbackend.domain.entity.Location;
+import com.utilitypro.gumbackend.dto.common.PageResponse;
+import com.utilitypro.gumbackend.dto.masterdata.LocationRequest;
+import com.utilitypro.gumbackend.dto.masterdata.LocationResponse;
+import com.utilitypro.gumbackend.mapper.LocationMapper;
+import com.utilitypro.gumbackend.repository.AuditLogRepository;
+import com.utilitypro.gumbackend.repository.LocationRepository;
+import com.utilitypro.gumbackend.security.AuthorizationHelper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+/**
+ * Location Service
+ * Handles location CRUD with ministry/department access checks
+ */
+@Service
+@RequiredArgsConstructor
+public class LocationService {
+
+    private final LocationRepository locationRepository;
+    private final LocationMapper locationMapper;
+    private final AuditLogRepository auditLogRepository;
+    private final AuthorizationHelper authorizationHelper;
+
+    /**
+     * List locations filtered by ministry with pagination
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<LocationResponse> listLocations(UUID ministryId, Boolean includeInactive, Pageable pageable) {
+        Page<Location> locations;
+        
+        if (ministryId != null) {
+            locations = locationRepository.findByMinistryId(ministryId, pageable);
+        } else if (Boolean.TRUE.equals(includeInactive)) {
+            locations = locationRepository.findAll(pageable);
+        } else {
+            locations = locationRepository.findByIsActiveTrue(pageable);
+        }
+
+        return PageResponse.of(locations, locationMapper::toResponse);
+    }
+
+    /**
+     * Get location by ID
+     */
+    @Transactional(readOnly = true)
+    public LocationResponse getLocation(UUID id) {
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Location not found"));
+        return locationMapper.toResponse(location);
+    }
+
+    /**
+     * Create new location
+     */
+    @Transactional
+    public LocationResponse createLocation(LocationRequest request) {
+        authorizationHelper.requireRole("system_admin", "mof_admin", "ministry_admin");
+        
+        // Check ministry access
+        if (request.ministryId() != null) {
+            authorizationHelper.requireMinistryAccess(request.ministryId());
+        }
+
+        Location location = locationMapper.toEntity(request);
+        location.setIsActive(true);
+        Location saved = locationRepository.save(location);
+
+        createAuditLog("Location", saved.getId(), "CREATE");
+        return locationMapper.toResponse(saved);
+    }
+
+    /**
+     * Update location
+     */
+    @Transactional
+    public LocationResponse updateLocation(UUID id, LocationRequest request) {
+        authorizationHelper.requireRole("system_admin", "mof_admin", "ministry_admin");
+
+        Location existing = locationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Location not found"));
+
+        // Check ministry access
+        if (existing.getMinistryId() != null) {
+            authorizationHelper.requireMinistryAccess(existing.getMinistryId());
+        }
+
+        locationMapper.updateEntityFromRequest(existing, request);
+        Location saved = locationRepository.save(existing);
+        
+        createAuditLog("Location", saved.getId(), "UPDATE");
+        return locationMapper.toResponse(saved);
+    }
+
+    /**
+     * Soft delete location
+     */
+    @Transactional
+    public void deleteLocation(UUID id) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Location not found"));
+
+        location.setIsActive(false);
+        locationRepository.save(location);
+        createAuditLog("Location", id, "DELETE");
+    }
+
+    private void createAuditLog(String entityType, UUID entityId, String action) {
+        AuditLog auditLog = AuditLog.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .action(action)
+                .changedBy(authorizationHelper.getCurrentUserId())
+                .changedAt(OffsetDateTime.now())
+                .build();
+        auditLogRepository.save(auditLog);
+    }
+}

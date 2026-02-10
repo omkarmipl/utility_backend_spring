@@ -1,0 +1,184 @@
+package com.utilitypro.gumbackend.service;
+
+import com.utilitypro.gumbackend.domain.entity.AuditLog;
+import com.utilitypro.gumbackend.domain.entity.Ministry;
+import com.utilitypro.gumbackend.domain.entity.UserScope;
+import com.utilitypro.gumbackend.dto.common.PageResponse;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryRequest;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryResponse;
+import com.utilitypro.gumbackend.mapper.MinistryMapper;
+import com.utilitypro.gumbackend.repository.AuditLogRepository;
+import com.utilitypro.gumbackend.repository.MinistryRepository;
+import com.utilitypro.gumbackend.security.AuthorizationHelper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+/**
+ * Ministry Service
+ * Handles ministry CRUD with scope-based filtering and DTO mapping
+ */
+@Service
+@RequiredArgsConstructor
+public class MinistryService {
+
+    private final MinistryRepository ministryRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final AuthorizationHelper authorizationHelper;
+    private final MinistryMapper ministryMapper;
+
+    /**
+     * List ministries filtered by user scopes with pagination
+     * System/MoF admins see all, others see only scoped ministries
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<MinistryResponse> listMinistries(Boolean includeInactive, Pageable pageable) {
+        List<Ministry> ministries;
+        
+        if (Boolean.TRUE.equals(includeInactive)) {
+            ministries = ministryRepository.findAll();
+        } else {
+            ministries = ministryRepository.findByIsActiveTrue();
+        }
+
+        // Filter by user scopes if not system/mof admin
+        if (!authorizationHelper.isSystemAdmin() && !authorizationHelper.isMofAdmin()) {
+            List<UserScope> scopes = authorizationHelper.getUserScopes();
+            
+            // If user has no scopes, return empty list
+            if (scopes.isEmpty()) {
+                return PageResponse.fromPageAndList(Page.empty(pageable), List.of());
+            }
+
+            // Get ministry IDs from scopes (null ministry means all)
+            List<UUID> ministryIds = scopes.stream()
+                    .map(scope -> scope.getMinistry())
+                    .filter(ministry -> ministry != null)
+                    .map(Ministry::getId)
+                    .collect(Collectors.toList());
+
+            // If any scope has null ministry, user has access to all
+            boolean hasAccessToAll = scopes.stream()
+                    .anyMatch(scope -> scope.getMinistry() == null);
+
+            if (!hasAccessToAll) {
+                ministries = ministries.stream()
+                        .filter(m -> ministryIds.contains(m.getId()))
+                        .collect(Collectors.toList());
+            }
+        }
+
+        // Apply pagination manually (since we filtered in memory)
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), ministries.size());
+        List<Ministry> pageContent = ministries.subList(start, end);
+        Page<Ministry> page = new PageImpl<>(pageContent, pageable, ministries.size());
+
+        // Map to DTOs
+        List<MinistryResponse> dtoList = page.getContent().stream()
+                .map(ministryMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return PageResponse.fromPageAndList(page, dtoList);
+    }
+
+    /**
+     * Get ministry by ID with scope check
+     */
+    @Transactional(readOnly = true)
+    public MinistryResponse getMinistry(UUID id) {
+        Ministry ministry = ministryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ministry not found"));
+
+        // Check scope access
+        authorizationHelper.requireMinistryAccess(id);
+
+        return ministryMapper.toResponse(ministry);
+    }
+
+    /**
+     * Create new ministry
+     * Requires system_admin or mof_admin role
+     */
+    @Transactional
+    public MinistryResponse createMinistry(MinistryRequest request) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+
+        // Validate unique code
+        if (request.code() != null && ministryRepository.findByCode(request.code()).isPresent()) {
+            throw new IllegalArgumentException("Ministry code already exists");
+        }
+
+        Ministry ministry = ministryMapper.toEntity(request);
+        ministry.setIsActive(true);
+        Ministry saved = ministryRepository.save(ministry);
+
+        // Audit log
+        createAuditLog("Ministry", saved.getId(), "CREATE");
+
+        return ministryMapper.toResponse(saved);
+    }
+
+    /**
+     * Update ministry
+     * Requires system_admin or mof_admin role
+     */
+    @Transactional
+    public MinistryResponse updateMinistry(UUID id, MinistryRequest request) {
+        authorizationHelper.requireRole("system_admin", "mof_admin");
+
+        Ministry existing = ministryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ministry not found"));
+
+        // Update fields using mapper
+        ministryMapper.updateEntityFromRequest(existing, request);
+
+        Ministry saved = ministryRepository.save(existing);
+
+        // Audit log
+        createAuditLog("Ministry", saved.getId(), "UPDATE");
+
+        return ministryMapper.toResponse(saved);
+    }
+
+    /**
+     * Soft delete ministry
+     * Requires system_admin role
+     */
+    @Transactional
+    public void deleteMinistry(UUID id) {
+        authorizationHelper.requireRole("system_admin");
+
+        Ministry ministry = ministryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ministry not found"));
+
+        ministry.setIsActive(false);
+        ministryRepository.save(ministry);
+
+        // Audit log
+        createAuditLog("Ministry", id, "DELETE");
+    }
+
+    /**
+     * Create audit log entry
+     */
+    private void createAuditLog(String entityType, UUID entityId, String action) {
+        AuditLog auditLog = AuditLog.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .action(action)
+                .changedBy(authorizationHelper.getCurrentUserId())
+                .changedAt(OffsetDateTime.now())
+                .build();
+        
+        auditLogRepository.save(auditLog);
+    }
+}

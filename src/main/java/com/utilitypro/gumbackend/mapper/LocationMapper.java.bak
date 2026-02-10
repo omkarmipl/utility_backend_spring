@@ -1,0 +1,48 @@
+package com.utilitypro.gumbackend.mapper;
+
+import com.utilitypro.gumbackend.domain.entity.Location;
+import com.utilitypro.gumbackend.dto.masterdata.LocationRequest;
+import com.utilitypro.gumbackend.dto.masterdata.LocationResponse;
+import org.springframework.stereotype.Component;
+
+/**
+ * Mapper for Location entities and DTOs
+ */
+@Component
+public class LocationMapper {
+
+    public LocationResponse toResponse(Location entity) {
+        return LocationResponse.builder()
+                .id(entity.getId())
+                .ministryId(entity.getMinistryId())
+                .departmentId(entity.getDepartmentId())
+                .name(entity.getName())
+                .address(entity.getAddress())
+                .city(entity.getCity())
+                .district(entity.getDistrict())
+                .isActive(entity.getIsActive())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public Location toEntity(LocationRequest request) {
+        return Location.builder()
+                .ministryId(request.ministryId())
+                .departmentId(request.departmentId())
+                .name(request.name())
+                .address(request.address())
+                .city(request.city())
+                .district(request.district())
+                .build();
+    }
+
+    public void updateEntityFromRequest(Location entity, LocationRequest request) {
+        entity.setMinistryId(request.ministryId());
+        entity.setDepartmentId(request.departmentId());
+        entity.setName(request.name());
+        entity.setAddress(request.address());
+        entity.setCity(request.city());
+        entity.setDistrict(request.district());
+    }
+}

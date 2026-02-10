@@ -1,0 +1,31 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.search.GlobalSearchResponse;
+import com.utilitypro.gumbackend.service.SearchService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * REST Controller for Global Search
+ * Handles search across all entities
+ */
+@RestController
+@RequestMapping("/api/search")
+@RequiredArgsConstructor
+public class SearchController {
+
+    private final SearchService searchService;
+
+    /**
+     * GET /api/search
+     * Global search across entities
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<GlobalSearchResponse> globalSearch(@RequestParam String q) {
+        GlobalSearchResponse response = searchService.globalSearch(q);
+        return ResponseEntity.ok(response);
+    }
+}

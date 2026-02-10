@@ -1,0 +1,81 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.payment.*;
+import com.utilitypro.gumbackend.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Payment Management
+ * Handles payment CRUD operations and bill allocations
+ */
+@RestController
+@RequestMapping("/api/payments")
+@RequiredArgsConstructor
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    /**
+     * GET /api/payments
+     * List all payments
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaymentListResponse> listPayments() {
+        PaymentListResponse response = paymentService.listPayments();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/payments/:id
+     * Get payment details with allocations
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaymentDetailResponse> getPayment(@PathVariable UUID id) {
+        PaymentDetailResponse response = paymentService.getPayment(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/payments
+     * Create payment with bill allocations
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
+        PaymentResponse response = paymentService.createPayment(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/payments/:id
+     * Update payment
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<PaymentResponse> updatePayment(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdatePaymentRequest request) {
+        PaymentResponse response = paymentService.updatePayment(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/payments/:id
+     * Delete payment
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> deletePayment(@PathVariable UUID id) {
+        paymentService.deletePayment(id);
+        return ResponseEntity.noContent().build();
+    }
+}

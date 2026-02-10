@@ -1,0 +1,82 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.budget.*;
+import com.utilitypro.gumbackend.service.BudgetService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Budget Management
+ * Handles budget CRUD operations and bulk operations
+ */
+@RestController
+@RequestMapping("/api/budgets")
+@RequiredArgsConstructor
+public class BudgetController {
+
+    private final BudgetService budgetService;
+
+    /**
+     * GET /api/budgets
+     * List utility budgets
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BudgetListResponse> listBudgets(
+            @RequestParam(required = false) Integer fiscal_year) {
+        BudgetListResponse response = budgetService.listBudgets(fiscal_year);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/budgets
+     * Create budget
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<BudgetResponse> createBudget(@Valid @RequestBody CreateBudgetRequest request) {
+        BudgetResponse response = budgetService.createBudget(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * POST /api/budgets/bulk
+     * Bulk create budgets
+     */
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<BulkBudgetResponse> bulkCreateBudgets(@Valid @RequestBody BulkBudgetRequest request) {
+        BulkBudgetResponse response = budgetService.bulkCreateBudgets(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /api/budgets/:id
+     * Update budget
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<BudgetResponse> updateBudget(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateBudgetRequest request) {
+        BudgetResponse response = budgetService.updateBudget(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/budgets/:id
+     * Delete budget
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<Void> deleteBudget(@PathVariable UUID id) {
+        budgetService.deleteBudget(id);
+        return ResponseEntity.noContent().build();
+    }
+}

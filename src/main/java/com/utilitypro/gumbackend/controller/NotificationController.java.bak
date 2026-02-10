@@ -1,0 +1,78 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.notification.*;
+import com.utilitypro.gumbackend.service.NotificationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+/**
+ * REST Controller for In-App Notifications
+ * Handles notification CRUD operations and read status management
+ */
+@RestController
+@RequestMapping("/api/notifications")
+@RequiredArgsConstructor
+public class NotificationController {
+
+    private final NotificationService notificationService;
+
+    /**
+     * GET /api/notifications
+     * List in-app notifications for current user
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<NotificationListResponse> listNotifications(
+            @RequestParam(required = false, defaultValue = "50") Integer limit) {
+        NotificationListResponse response = notificationService.listNotifications(limit);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/notifications/unread-count
+     * Get count of unread notifications
+     */
+    @GetMapping("/unread-count")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UnreadCountResponse> getUnreadCount() {
+        UnreadCountResponse response = notificationService.getUnreadCount();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /api/notifications/:id/read
+     * Mark notification as read
+     */
+    @PutMapping("/{id}/read")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> markAsRead(@PathVariable UUID id) {
+        notificationService.markAsRead(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * PUT /api/notifications/read-all
+     * Mark all notifications as read
+     */
+    @PutMapping("/read-all")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> markAllAsRead() {
+        notificationService.markAllAsRead();
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * DELETE /api/notifications/:id
+     * Delete notification
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteNotification(@PathVariable UUID id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.noContent().build();
+    }
+}

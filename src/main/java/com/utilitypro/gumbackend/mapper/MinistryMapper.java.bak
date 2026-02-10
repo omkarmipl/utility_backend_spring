@@ -1,0 +1,39 @@
+package com.utilitypro.gumbackend.mapper;
+
+import com.utilitypro.gumbackend.domain.entity.Ministry;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryRequest;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryResponse;
+import org.springframework.stereotype.Component;
+
+/**
+ * Mapper for Ministry entities and DTOs
+ */
+@Component
+public class MinistryMapper {
+
+    public MinistryResponse toResponse(Ministry entity) {
+        return MinistryResponse.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .code(entity.getCode())
+                .description(entity.getDescription())
+                .isActive(entity.getIsActive())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public Ministry toEntity(MinistryRequest request) {
+        return Ministry.builder()
+                .name(request.name())
+                .code(request.code())
+                .description(request.description())
+                .build();
+    }
+
+    public void updateEntityFromRequest(Ministry entity, MinistryRequest request) {
+        entity.setName(request.name());
+        entity.setCode(request.code());
+        entity.setDescription(request.description());
+    }
+}

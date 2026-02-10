@@ -22,6 +22,9 @@ public class AlertSetting {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "ministry_id")
+    private UUID ministryId;
+
     @Column(nullable = false)
     private Boolean enabled;
 

@@ -1,0 +1,72 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.location.*;
+import com.utilitypro.gumbackend.service.LocationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Location Management
+ * Handles location CRUD operations
+ */
+@RestController
+@RequestMapping("/api/locations")
+@RequiredArgsConstructor
+public class LocationController {
+
+    private final LocationService locationService;
+
+    /**
+     * GET /api/locations
+     * List locations filtered by ministry
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LocationListResponse> listLocations(
+            @RequestParam(required = false) UUID ministry_id,
+            @RequestParam(required = false) Boolean include_inactive) {
+        LocationListResponse response = locationService.listLocations(ministry_id, include_inactive);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/locations
+     * Create new location
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<LocationResponse> createLocation(@Valid @RequestBody CreateLocationRequest request) {
+        LocationResponse response = locationService.createLocation(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/locations/:id
+     * Update location
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin', 'ministry_admin')")
+    public ResponseEntity<LocationResponse> updateLocation(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateLocationRequest request) {
+        LocationResponse response = locationService.updateLocation(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/locations/:id
+     * Delete location
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<Void> deleteLocation(@PathVariable UUID id) {
+        locationService.deleteLocation(id);
+        return ResponseEntity.noContent().build();
+    }
+}

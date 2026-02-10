@@ -1,0 +1,56 @@
+package com.utilitypro.gumbackend.mapper;
+
+import com.utilitypro.gumbackend.domain.entity.UtilityAccount;
+import com.utilitypro.gumbackend.dto.business.UtilityAccountRequest;
+import com.utilitypro.gumbackend.dto.business.UtilityAccountResponse;
+import org.springframework.stereotype.Component;
+
+/**
+ * Mapper for UtilityAccount entities and DTOs
+ */
+@Component
+public class UtilityAccountMapper {
+
+    public UtilityAccountResponse toResponse(UtilityAccount entity) {
+        return UtilityAccountResponse.builder()
+                .id(entity.getId())
+                .providerId(entity.getProviderId())
+                .ministryId(entity.getMinistryId())
+                .departmentId(entity.getDepartmentId())
+                .locationId(entity.getLocationId())
+                .providerAccountNumber(entity.getProviderAccountNumber())
+                .accountStartDate(entity.getAccountStartDate())
+                .accountEndDate(entity.getAccountEndDate())
+                .accountStatus(entity.getAccountStatus())
+                .notes(entity.getNotes())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public UtilityAccount toEntity(UtilityAccountRequest request) {
+        return UtilityAccount.builder()
+                .providerId(request.getProviderId())
+                .ministryId(request.getMinistryId())
+                .departmentId(request.getDepartmentId())
+                .locationId(request.getLocationId())
+                .providerAccountNumber(request.getProviderAccountNumber())
+                .accountStartDate(request.getAccountStartDate())
+                .accountEndDate(request.getAccountEndDate())
+                .accountStatus(request.getAccountStatus())
+                .notes(request.getNotes())
+                .build();
+    }
+
+    public void updateEntityFromRequest(UtilityAccount entity, UtilityAccountRequest request) {
+        entity.setProviderId(request.getProviderId());
+        entity.setMinistryId(request.getMinistryId());
+        entity.setDepartmentId(request.getDepartmentId());
+        entity.setLocationId(request.getLocationId());
+        entity.setProviderAccountNumber(request.getProviderAccountNumber());
+        entity.setAccountStartDate(request.getAccountStartDate());
+        entity.setAccountEndDate(request.getAccountEndDate());
+        entity.setAccountStatus(request.getAccountStatus());
+        entity.setNotes(request.getNotes());
+    }
+}

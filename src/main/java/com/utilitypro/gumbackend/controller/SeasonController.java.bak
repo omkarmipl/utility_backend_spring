@@ -1,0 +1,71 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.season.*;
+import com.utilitypro.gumbackend.service.SeasonService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+/**
+ * REST Controller for Season Management
+ * Handles season CRUD operations
+ */
+@RestController
+@RequestMapping("/api/seasons")
+@RequiredArgsConstructor
+public class SeasonController {
+
+    private final SeasonService seasonService;
+
+    /**
+     * GET /api/seasons
+     * List all seasons
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<SeasonListResponse> listSeasons(
+            @RequestParam(required = false) Boolean active_only) {
+        SeasonListResponse response = seasonService.listSeasons(active_only);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/seasons
+     * Create season
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<SeasonResponse> createSeason(@Valid @RequestBody CreateSeasonRequest request) {
+        SeasonResponse response = seasonService.createSeason(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/seasons/:id
+     * Update season
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<SeasonResponse> updateSeason(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateSeasonRequest request) {
+        SeasonResponse response = seasonService.updateSeason(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/seasons/:id
+     * Delete season
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> deleteSeason(@PathVariable UUID id) {
+        seasonService.deleteSeason(id);
+        return ResponseEntity.noContent().build();
+    }
+}

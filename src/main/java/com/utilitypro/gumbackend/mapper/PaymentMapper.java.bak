@@ -1,0 +1,53 @@
+package com.utilitypro.gumbackend.mapper;
+
+import com.utilitypro.gumbackend.domain.entity.Payment;
+import com.utilitypro.gumbackend.dto.business.PaymentRequest;
+import com.utilitypro.gumbackend.dto.business.PaymentResponse;
+import org.springframework.stereotype.Component;
+
+/**
+ * Mapper for Payment entities and DTOs
+ */
+@Component
+public class PaymentMapper {
+
+    public PaymentResponse toResponse(Payment entity) {
+        return PaymentResponse.builder()
+                .id(entity.getId())
+                .providerId(entity.getProviderId())
+                .ministryId(entity.getMinistryId())
+                .departmentId(entity.getDepartmentId())
+                .paymentReference(entity.getPaymentReference())
+                .paymentDate(entity.getPaymentDate())
+                .totalAmount(entity.getTotalAmount())
+                .paymentMethod(entity.getPaymentMethod())
+                .notes(entity.getNotes())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public Payment toEntity(PaymentRequest request) {
+        return Payment.builder()
+                .providerId(request.getProviderId())
+                .ministryId(request.getMinistryId())
+                .departmentId(request.getDepartmentId())
+                .paymentReference(request.getPaymentReference())
+                .paymentDate(request.getPaymentDate())
+                .totalAmount(request.getTotalAmount())
+                .paymentMethod(request.getPaymentMethod())
+                .notes(request.getNotes())
+                .build();
+    }
+
+    public void updateEntityFromRequest(Payment entity, PaymentRequest request) {
+        entity.setProviderId(request.getProviderId());
+        entity.setMinistryId(request.getMinistryId());
+        entity.setDepartmentId(request.getDepartmentId());
+        entity.setPaymentReference(request.getPaymentReference());
+        entity.setPaymentDate(request.getPaymentDate());
+        entity.setTotalAmount(request.getTotalAmount());
+        entity.setPaymentMethod(request.getPaymentMethod());
+        entity.setNotes(request.getNotes());
+    }
+}

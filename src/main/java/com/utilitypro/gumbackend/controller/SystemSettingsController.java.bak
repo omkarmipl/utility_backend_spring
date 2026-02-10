@@ -1,0 +1,66 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.settings.*;
+import com.utilitypro.gumbackend.service.SystemSettingsService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+
+/**
+ * REST Controller for System Settings Management
+ * Handles system-wide settings and branding configuration
+ */
+@RestController
+@RequestMapping("/api/settings")
+@RequiredArgsConstructor
+public class SystemSettingsController {
+
+    private final SystemSettingsService systemSettingsService;
+
+    /**
+     * GET /api/settings/system
+     * Get system-wide settings
+     */
+    @GetMapping("/system")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<SystemSettingsResponse> getSystemSettings() {
+        SystemSettingsResponse response = systemSettingsService.getSystemSettings();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /api/settings/system
+     * Update system settings
+     */
+    @PutMapping("/system")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<SystemSettingsResponse> updateSystemSettings(@Valid @RequestBody UpdateSystemSettingsRequest request) {
+        SystemSettingsResponse response = systemSettingsService.updateSystemSettings(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/settings/branding
+     * Get branding/theme settings
+     */
+    @GetMapping("/branding")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BrandingSettingsResponse> getBrandingSettings() {
+        BrandingSettingsResponse response = systemSettingsService.getBrandingSettings();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /api/settings/branding
+     * Update branding settings
+     */
+    @PutMapping("/branding")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> updateBrandingSettings(@Valid @RequestBody UpdateBrandingSettingsRequest request) {
+        systemSettingsService.updateBrandingSettings(request);
+        return ResponseEntity.noContent().build();
+    }
+}

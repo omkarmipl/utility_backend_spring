@@ -1,0 +1,90 @@
+package com.utilitypro.gumbackend.controller;
+
+import com.utilitypro.gumbackend.dto.common.PageResponse;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryRequest;
+import com.utilitypro.gumbackend.dto.masterdata.MinistryResponse;
+import com.utilitypro.gumbackend.service.MinistryService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+/**
+ * REST Controller for Ministry Management
+ * Handles ministry CRUD operations with pagination support
+ */
+@RestController
+@RequestMapping("/api/ministries")
+@RequiredArgsConstructor
+public class MinistryController {
+
+    private final MinistryService ministryService;
+
+    /**
+     * GET /api/ministries
+     * List all active ministries with pagination (filtered by user scope)
+     * 
+     * @param includeInactive Include inactive ministries
+     * @param pageable Pagination parameters (page, size, sort)
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PageResponse<MinistryResponse>> listMinistries(
+            @RequestParam(required = false, defaultValue = "false") Boolean includeInactive,
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        PageResponse<MinistryResponse> response = ministryService.listMinistries(includeInactive, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/ministries/:id
+     * Get ministry details
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MinistryResponse> getMinistry(@PathVariable UUID id) {
+        MinistryResponse response = ministryService.getMinistry(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/ministries
+     * Create new ministry
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<MinistryResponse> createMinistry(@Valid @RequestBody MinistryRequest request) {
+        MinistryResponse response = ministryService.createMinistry(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * PUT /api/ministries/:id
+     * Update ministry
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('system_admin', 'mof_admin')")
+    public ResponseEntity<MinistryResponse> updateMinistry(
+            @PathVariable UUID id,
+            @Valid @RequestBody MinistryRequest request) {
+        MinistryResponse response = ministryService.updateMinistry(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DELETE /api/ministries/:id
+     * Delete ministry
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('system_admin')")
+    public ResponseEntity<Void> deleteMinistry(@PathVariable UUID id) {
+        ministryService.deleteMinistry(id);
+        return ResponseEntity.noContent().build();
+    }
+}
